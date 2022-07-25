@@ -197,13 +197,15 @@ class Sai:
 
     attempts = 40
 
-    # TODO Why use `exec_params`? Incapsulation is broken?
+    # TODO Why use `exec_params`? Encapsulation is broken?
     def __init__(self, exec_params: dict):
         self.server_ip = exec_params["server"]
+        self.server_port = exec_params.get("server_port", 6379)
+        self.main_redis_db_id = exec_params.get("main_db", 1)
+        self.loglevel_db_id = exec_params.get("main_db", 3)
         self.loglevel = exec_params["loglevel"]
-        # TODO Could multiple SAI use same redis DB?
-        self.r = redis.Redis(host=self.server_ip, port=6379, db=1)
-        self.loglevel_db = redis.Redis(host=self.server_ip, port=6379, db=3)
+        self.r = redis.Redis(host=self.server_ip, port=self.server_port, db=self.main_redis_db_id)
+        self.loglevel_db = redis.Redis(host=self.server_ip, port=self.server_port, db=self.loglevel_db_id)
         self.cache = {}
         self.rec2vid = {}
 
