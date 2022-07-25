@@ -217,7 +217,7 @@ class Sai:
         # maybe it has to be configured
         self.mock_mode = exec_params.get("saivs", not(self.client_mode or self.libsai_accessible_locally))
 
-        self.run_traffic = exec_params["traffic"] and not self.mock_mode
+        self.run_traffic = exec_params.get("traffic") and not self.mock_mode
         self.name = exec_params["asic"]
         self.target = exec_params["target"]
         self.sku = exec_params["sku"]
