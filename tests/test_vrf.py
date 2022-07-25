@@ -20,7 +20,7 @@ def test_default_vrf(npu, dataplane):
     assert admin_v4_state[1] == 'true'
 
     # Get multiple VRF attributes
-    if not npu.libsaivs:
+    if not npu.mock_mode:
         # TODO: Not implemented for SONiC VS for the attributes that were not set before
         attrs = npu.get(vrf_oid,
                         [
@@ -33,7 +33,7 @@ def test_default_vrf(npu, dataplane):
                         ]).to_json()
 
     # Remove default VRF should cause SAI_STATUS_OBJECT_IN_USE
-    if not npu.libsaivs:
+    if not npu.mock_mode:
         # TODO: Not implemented for SONiC VS
         status = npu.remove(vrf_oid, False)
         assert (status == 'SAI_STATUS_OBJECT_IN_USE')

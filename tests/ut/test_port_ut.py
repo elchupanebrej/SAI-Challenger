@@ -2,7 +2,7 @@ import pytest
 from sai import SaiObjType
 from sai import Sai
 
-port_attrs = Sai.get_obj_attrs(SaiObjType.PORT)
+port_attrs = Sai.Meta().get_obj_attrs(SaiObjType.PORT)
 port_attrs_default = {}
 port_attrs_updated = {}
 
@@ -17,7 +17,7 @@ def sai_port_obj(npu):
         if attr in port_attrs_default:
             npu.set(port_oid, [attr, port_attrs_default[attr]])
 
-
+# TODO check parametization
 @pytest.mark.parametrize(
     "attr,attr_type",
     port_attrs

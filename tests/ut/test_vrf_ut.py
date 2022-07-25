@@ -2,9 +2,10 @@ import pytest
 from sai import Sai
 from sai import SaiObjType
 
-switch_attrs = Sai.get_obj_attrs("SAI_OBJECT_TYPE_VIRTUAL_ROUTER")
+switch_attrs = Sai.Meta().get_obj_attrs("SAI_OBJECT_TYPE_VIRTUAL_ROUTER")
 
 
+# TODO Check parametrization
 @pytest.mark.parametrize(
     "attr,attr_type",
     switch_attrs

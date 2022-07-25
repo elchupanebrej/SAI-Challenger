@@ -12,7 +12,7 @@ def sai_hostif_obj(npu):
                                 "SAI_HOSTIF_ATTR_OBJ_ID",      npu.port_oids[0],
                                 "SAI_HOSTIF_ATTR_OPER_STATUS", "true"
                             ])
-    if npu.libsaivs:
+    if npu.mock_mode:
         # BUG: After hostif creation on saivs, both created netdev
         #      and related FP port are in admin down state.
         npu.remote_iface_status_set("eth1", True)
@@ -27,7 +27,7 @@ def test_netdev_create(npu, sai_hostif_obj):
 
 @pytest.mark.dependency(depends=['test_netdev_create'])
 def test_netdev_pkt(npu, dataplane, sai_hostif_obj):
-    if not npu.libsaivs:
+    if not npu.mock_mode:
         pytest.skip("valid for saivs only")
 
     hostifs = {
