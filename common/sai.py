@@ -209,12 +209,14 @@ class Sai:
         self.cache = {}
         self.rec2vid = {}
 
-        # TODO Why client mode is checking by present of redis-server binary? Seems it should come from config
-        self.client_mode = not os.path.isfile("/usr/bin/redis-server")
+        # `redis_accessible_locally` deprecated property used. Redis could be installed in other locations,
+        # maybe it has to be configured
+        self.client_mode = exec_params.get('client_mode', not self.redis_accessible_locally)
 
-        # TODO why is it here? EXtra check is needed
-        libsai = os.path.isfile("/usr/lib/libsai.so") or os.path.isfile("/usr/local/lib/libsai.so")
-        self.mock_mode = exec_params["saivs"] or not(self.client_mode or libsai)
+        # `libsai_accessible_locally` deprecated property used. libsai could be installed in other locations,
+        # maybe it has to be configured
+        self.mock_mode = exec_params.get("saivs", not(self.client_mode or self.libsai_accessible_locally))
+
         self.run_traffic = exec_params["traffic"] and not self.mock_mode
         self.name = exec_params["asic"]
         self.target = exec_params["target"]
@@ -239,6 +241,16 @@ class Sai:
     def libsaivs(self):
         """Deprecated"""
         return self.mock_mode
+
+    @property
+    def libsai_accessible_locally(self):
+        """Deprecated"""
+        return os.path.isfile("/usr/lib/libsai.so") or os.path.isfile("/usr/local/lib/libsai.so")
+
+    @property
+    def redis_accessible_locally(self):
+        """Deprecated"""
+        return os.path.isfile("/usr/bin/redis-server")
 
     def asser_syncd_running(self, tout=30):
         for i in range(tout):
