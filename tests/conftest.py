@@ -243,8 +243,7 @@ def npus(npu, npus_config):
         if npu_asic == 'generic':
             npus[npu_name] = SaiNpu(exec_params=npu_config['exec_params'])
         else:
-            asic_dir_glob_pattern = npu_config.get("asic_dir_glob",
-                                                   str(Path("..", "platform", "**", f"{npu_asic}{os.sep}")))
+            asic_dir_glob_pattern = npu_config.get("asic_dir_glob", f"../platform/**/{npu_asic}/")
             try:
                 asic_dir = next(Path.cwd().glob(asic_dir_glob_pattern))
             except StopIteration as e:

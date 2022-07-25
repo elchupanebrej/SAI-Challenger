@@ -17,7 +17,7 @@ def sai_port_obj(npu):
         if attr in port_attrs_default:
             npu.set(port_oid, [attr, port_attrs_default[attr]])
 
-# TODO check parametization
+
 @pytest.mark.parametrize(
     "attr,attr_type",
     port_attrs

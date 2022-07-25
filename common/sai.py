@@ -157,8 +157,8 @@ class SaiData:
 
 class Sai:
     class Meta:
-        def __init__(self, config_path="/etc/sai/sai.json"):
-            self.config_path = config_path
+        def __init__(self, config_path=None):
+            self.config_path = config_path if config_path is not None else "/etc/sai/sai.json"
 
         def get_meta(self, obj_type=None):
             try:
@@ -197,12 +197,11 @@ class Sai:
 
     attempts = 40
 
-    # TODO Why use `exec_params`? Encapsulation is broken?
     def __init__(self, exec_params: dict):
         self.server_ip = exec_params["server"]
         self.server_port = exec_params.get("server_port", 6379)
         self.main_redis_db_id = exec_params.get("main_db", 1)
-        self.loglevel_db_id = exec_params.get("main_db", 3)
+        self.loglevel_db_id = exec_params.get("loglevel_db", 3)
         self.loglevel = exec_params["loglevel"]
         self.r = redis.Redis(host=self.server_ip, port=self.server_port, db=self.main_redis_db_id)
         self.loglevel_db = redis.Redis(host=self.server_ip, port=self.server_port, db=self.loglevel_db_id)
@@ -223,7 +222,7 @@ class Sai:
         self.sku = exec_params["sku"]
         self.asic_dir = exec_params["asic_dir"]
 
-        self.meta = Sai.Meta(config_path=exec_params.get('sai_meta_config', "/etc/sai/sai.json"))
+        self.meta = Sai.Meta(config_path=exec_params.get('sai_meta_config'))
 
     @wraps(Meta.get_meta)
     def get_meta(self, *args, **kwargs):
