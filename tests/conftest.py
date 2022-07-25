@@ -1,19 +1,20 @@
-import logging
-import time
-import pytest
-import os
-import sys
-import imp
-import signal
-import random
-import unittest
 import glob
+import json
+import logging
+import os
+import random
+import sys
+import time
+
+import imp
+import pytest
+import signal
+from pathlib import Path
 
 curdir = os.path.dirname(os.path.realpath(__file__))
 ptfdir = os.path.join(curdir, '../ptf/src')
 sys.path.append(ptfdir)
 
-import ptf
 from ptf import config
 import ptf.ptfutils
 
@@ -118,6 +119,7 @@ def pytest_addoption(parser):
     parser.addoption("--asic", action="store", default=os.getenv('SC_ASIC'), help="ASIC type")
     parser.addoption("--target", action="store", default=os.getenv('SC_TARGET'), help="The target device with this NPU")
     parser.addoption("--sku", action="store", default=None, help="SKU mode")
+    parser.addoption("--npusconfigpath", action="store", default=None, help="Path to NPUs config")
 
 
 @pytest.fixture(scope="session")
@@ -194,6 +196,90 @@ def npu(exec_params):
     if npu is not None:
         npu.reset()
     return npu
+
+
+@pytest.fixture(scope='session')
+def npus_config(request):
+    npus_config_path_option = request.config.getoption("--npusconfigpath")
+    if npus_config_path_option is None:
+        return {"npu": {}}
+
+    npus_config_path = Path(npus_config_path_option)
+    with npus_config_path.open(mode='r') as npus_config_file:
+        npus_config = json.load(npus_config_file)
+
+    return npus_config
+
+
+@pytest.fixture(scope='session')
+def npus(npu, npus_config):
+    """
+    Fixture providing multiple NPUs from config
+
+    NPUs config is object with structure(exec_params are updated and passed to SaiNpu):
+    {
+        "npu":[
+            "GenericNPU": {
+                "exec_params": {
+                    "asic": "generic"
+                    ...: ...
+                }
+            },
+            "NonGenericNPU": {
+                "asic_dir_glob": "../platform/**/{non-generic-asic-type}/"
+                "exec_params": {
+                    "asic": "non-generic-asic-type"
+                    ...: ...
+                }
+            }
+        ]
+    }
+    """
+
+    npus = {'default': npu}
+    for npu_name, npu_config in npus_config["npu"].items():
+        npu_asic = npu_config['exec_params'].get('asic', 'generic')
+
+        if npu_asic == 'generic':
+            npus[npu_name] = SaiNpu(exec_params=npu_config['exec_params'])
+        else:
+            asic_dir_glob_pattern = npu_config.get("asic_dir_glob",
+                                                   str(Path("..", "platform", "**", f"{npu_asic}{os.sep}")))
+            try:
+                asic_dir = next(Path.cwd().glob(asic_dir_glob_pattern))
+            except StopIteration as e:
+                msg = f"Failed to find {asic_dir_glob_pattern} NPU folder"
+                logging.critical(msg)
+                raise ImportError(msg) from e
+
+            module_name = "sai_npu"
+
+            npu_module = None
+            last_exception = ImportError
+            msg = f"No {npu_asic} specific 'sai_npu' module defined.."
+            for module_path in [asic_dir, asic_dir / '..']:
+                try:
+                    npu_module = imp.load_module(module_name, *imp.find_module(module_name, [str(module_path)]))
+                except Exception as e:
+                    logging.info(msg)
+                    e.__cause__, last_exception = last_exception, e
+                    continue
+                else:
+                    break
+            else:
+                raise ImportError(msg) from last_exception
+
+            try:
+                npus[npu_name] = npu_module.SaiNpuImpl(exec_params={
+                    **npu_config[exec_params],
+                    **dict(asic_dir=str(asic_dir))
+                })
+            except Exception as e:
+                msg = f"Failed to instantiate 'sai_npu' module for {npu_asic}"
+                logging.critical(msg)
+                raise ImportError(msg) from e
+        npus[npu_name].reset()
+    return npus
 
 
 # NOTE: Obsoleted. The `npu` fixture should be used instead.
